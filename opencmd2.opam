@@ -1,0 +1,29 @@
+opam-version: "1.2"
+name: "opencmd2"
+version: "0.0.1"
+maintainer: "Davide Gessa <gessadavide@gmail.com>"
+authors: [
+  "Davide Gessa <gessadavide@gmail.com>"
+]
+
+homepage: "https://github.com/dakk/opencmd2"
+bug-reports: "https://github.com/dakk/opencmd2/issues"
+license: "MIT"
+dev-repo: "https://github.com/dakk/opencmd2.git"
+build: [
+  ["jbuilder" "build" "-p" name "-j" jobs "@install"]
+]
+
+depends: [
+  "jbuilder" {build & >= "1.0+beta11"}
+  "base" {build & >= "v0.9.2"}
+  "stdio" {build & >= "v0.9.0"}
+  "configurator" {build & >= "v0.9.1"}
+  "ppx_bitstring" {build & >= "2.0.0"}
+  
+  "stdint" {>= "0.3.0-0"}
+]
+
+depexts: [
+]
+

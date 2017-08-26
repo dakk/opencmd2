@@ -1,0 +1,6 @@
+B ../_build/default/src
+B ../_build/default/src/engine
+B ../_build/default/src/loaders
+FLG -w -40
+S engine
+S loaders

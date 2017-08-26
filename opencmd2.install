@@ -1,0 +1,10 @@
+lib: [
+  "_build/install/default/lib/opencmd2/META" {"META"}
+  "_build/install/default/lib/opencmd2/opam" {"opam"}
+]
+bin: [
+  "_build/install/default/bin/opencmd2" {"opencmd2"}
+]
+doc: [
+  "_build/install/default/doc/opencmd2/README.md"
+]

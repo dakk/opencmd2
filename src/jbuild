@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(executable
+ ((name opencmd2)
+  (public_name opencmd2)
+  (libraries (loaders engine))))
+
