@@ -1,5 +1,6 @@
 open Bitstring;;
 open Printf;;
+open Loader_helper;;
 
 module Version = struct
   type t = C1 | C2 | C3 | UNKNOWN;;
@@ -22,10 +23,7 @@ module Point = struct
   type t = float * float * float;;
 
   let from_stream ic = 
-    let buff = Bytes.make 12 '0' in
-    let _ = input ic buff 0 12 in
-    (* TODO these are floats!*)
-    match%bitstring bitstring_of_string buff with
+    match%bitstring read_bitstring ic 12 with
     | {| 
       x : 8 * 4 : littleendian;
       y : 8 * 4 : littleendian;
@@ -50,10 +48,7 @@ module District = struct
     let rec point_uvs ic n = match n with
     | 0 -> []
     | n -> 
-      let buff = Bytes.make 6 '0' in
-      let _ = input ic buff 0 6 in
-      (* TODO these are floats!*)
-      match%bitstring bitstring_of_string buff with
+      match%bitstring read_bitstring ic 6 with
       | {| 
         point : 8 * 2 : littleendian;
         u : 8 * 2 : littleendian;
@@ -61,10 +56,7 @@ module District = struct
       |} -> 
         (point, u, v) :: point_uvs ic (n-1)
     in
-    let buff = Bytes.make 2 '0' in
-    let _ = input s buff 0 2 in
-    (* TODO these are floats!*)
-    match%bitstring bitstring_of_string buff with
+    match%bitstring read_bitstring s 2 with
     | {| 
       n : 8 * 1 : littleendian;
       texid : 8 * 1 : littleendian
@@ -90,9 +82,7 @@ module Obj = struct
   };;
 
   let from_stream s = 
-    let buff = Bytes.make 52 '0' in
-    let _ = input s buff 0 52 in
-    match%bitstring bitstring_of_string buff with
+    match%bitstring read_bitstring s 52 with
     | {| 
       name : 8 * 44 : string;
       start_d : 8 * 4 : littleendian;
@@ -124,24 +114,17 @@ module Texture = struct
       match h with
       | 0 -> []
       | h ->
-        let buff = Bytes.make w '0' in
-        let _ = input s buff 0 w in
-        match%bitstring bitstring_of_string buff with
+        match%bitstring read_bitstring s w with
         | {| line : 8 * w : string |} ->
           explode line :: read_rectangle s w (h-1)
     in
     let rec read_palette s n = match n with
     | 0 -> []
     | n -> 
-      let buff = Bytes.make 3 '0' in
-      let _ = input s buff 0 3 in
-      match%bitstring bitstring_of_string buff with
+      match%bitstring read_bitstring s 3 with
       | {| pal : 8 * 3 : littleendian |} -> pal :: read_palette s (n - 1)
     in
-    let buff = Bytes.make 52 '0' in
-    let _ = input s buff 0 52 in
-    (* TODO these are floats!*)
-    match%bitstring bitstring_of_string buff with
+    match%bitstring read_bitstring s 12 with
     | {| 
       skip : 8 * 4 : string;
       width : 8 * 4 : littleendian;
@@ -172,9 +155,7 @@ type t = {
 
 let load path = 
   let ic = open_in_bin path in
-  let buff = Bytes.make 13 '0' in
-  let _ = input ic buff 0 13 in
-  match%bitstring bitstring_of_string buff with 
+  match%bitstring read_bitstring ic 13 with 
   | {| 
     version : 1 * 8 : littleendian;
     identif : 3 * 8 : string;
@@ -185,15 +166,11 @@ let load path =
     let points = Point.read_all_from_stream ic @@ Int32.to_int npoints in
     let districts = District.read_all_from_stream ic @@ Int32.to_int ndistricts in
     (* read objects *)
-    let buff = Bytes.make 4 '0' in
-    let _ = input ic buff 0 4 in
-    match%bitstring bitstring_of_string buff with 
+    match%bitstring read_bitstring ic 4 with 
     | {| nob : 4 * 8 : littleendian |} -> 
       let objs = Obj.read_all_from_stream ic @@ Int32.to_int nob in
     (* read textures *)
-    let buff = Bytes.make 4 '0' in
-    let _ = input ic buff 0 4 in
-    match%bitstring bitstring_of_string buff with 
+    match%bitstring read_bitstring ic 4 with 
     | {| not : 4 * 8 : littleendian |} -> 
       let texts = Texture.read_all_from_stream ic @@ Int32.to_int not in {
         version= Version.of_byte version;

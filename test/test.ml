@@ -9,7 +9,7 @@ let mbi_load () octx =
 ;;
 
 let str_load () octx = 
-	let str = Str.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MISIONES/001/003.str" in
+	let _ = Str.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MISIONES/001/003.str" in
 	assert_equal false false
 ;;
 
