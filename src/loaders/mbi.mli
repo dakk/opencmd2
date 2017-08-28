@@ -1,4 +1,5 @@
 (** Mission mesh *)
+open OgamlGraphics
 
 module Version : sig
   type t = C1 | C2 | C3 | UNKNOWN
@@ -49,7 +50,9 @@ module Texture : sig
     palette: (int * int * int) list;
     bitmap: int list list;
   }
-  
+
+
+  val to_image : t -> Image.t
   val to_gif : t -> string -> unit
   val from_stream : in_channel -> t  
   val read_all_from_stream : in_channel -> int32 -> t list

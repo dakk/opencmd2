@@ -1,6 +1,8 @@
 open Bitstring;;
 open Printf;;
 open Loader_helper;;
+open OgamlGraphics;;
+
 
 module Version = struct
   type t = C1 | C2 | C3 | UNKNOWN;;
@@ -106,6 +108,8 @@ module Texture = struct
     bitmap: int list list;
   };;
 
+  let to_image tex = Image.create @@ `Data ({x=tex.width; y=tex.height}, "");;
+
   let to_gif tex path = 
     let rec palette_conv l = match l with
     | [] -> ""
@@ -114,7 +118,7 @@ module Texture = struct
       p ^ (palette_conv l')
     in
     let p = palette_conv tex.palette in
-    let header = [%bitstring {|
+    let gif = string_of_bitstring [%bitstring {|
       "GIF87a" : 6 * 8 : string;
       tex.width : 2 * 8 : littleendian;
       tex.height : 2 * 8 : littleendian;
@@ -126,7 +130,9 @@ module Texture = struct
       0 : 8;
       p : 8 * (String.length p) : string
     |}] in
-    ()
+    let oc = open_out_bin path in
+    output oc gif 0 @@ Bytes.length gif;
+    close_out oc
   ;;
   
   let from_stream s = 
@@ -189,7 +195,6 @@ let load path =
     npoints : 4 * 8 : littleendian;
     ndistricts : 4 * 8 : littleendian
   |} -> 
-    Printf.printf "%s\n%!" @@ Version.to_string (Version.of_byte version);
     if identif <> "IBM" then raise LoadError;
     let points = Point.read_all_from_stream ic npoints in
     let districts = District.read_all_from_stream ic ndistricts in 
