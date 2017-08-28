@@ -26,10 +26,10 @@ module Point = struct
     (* TODO these are floats!*)
     match%bitstring bitstring_of_string buff with
     | {| 
-      x : 8 * 4 : string;
-      y : 8 * 4 : string;
-      z : 8 * 4 : string
-    |} -> (x, y, z)
+      x : 8 * 4 : littleendian;
+      y : 8 * 4 : littleendian;
+      z : 8 * 4 : littleendian
+    |} -> (Int32.float_of_bits x, Int32.float_of_bits y, Int32.float_of_bits z)
   ;;
 
   let rec read_all_from_stream ic n = match n with
@@ -115,6 +115,20 @@ module Texture = struct
   };;
   
   let from_stream s = 
+    let rec read_rectangle s w h = 
+      let explode ss =
+        let rec exp i l = if i < 0 then l else exp (i - 1) ((Char.code ss.[i]) :: l) in
+        exp (String.length ss - 1) []
+      in
+      match h with
+      | 0 -> []
+      | h ->
+        let buff = Bytes.make w '0' in
+        let _ = input s buff 0 w in
+        match%bitstring bitstring_of_string buff with
+        | {| line : 8 * w : string |} ->
+          explode line :: read_rectangle s w (h-1)
+    in
     let rec read_palette s n = match n with
     | 0 -> []
     | n -> 
@@ -135,7 +149,7 @@ module Texture = struct
       width= Int32.to_int width;
       height= Int32.to_int height;
       palette= read_palette s 256;
-      rectangle= [];
+      rectangle= read_rectangle s (Int32.to_int width) (Int32.to_int height);
     }
   ;;
   
@@ -180,6 +194,88 @@ let load path =
     let _ = input ic buff 0 4 in
     match%bitstring bitstring_of_string buff with 
     | {| not : 4 * 8 : littleendian |} -> 
-      
-    ()
+      let texts = Texture.read_all_from_stream ic @@ Int32.to_int not in {
+        version= Version.of_byte version;
+        points= points;
+        districts= districts;
+        objects= objs;
+        textures= texts;
+      }
 ;;
+
+
+let to_obj mbi = 
+  false
+;;
+
+
+(*
+Dim Dir As String = GetFileDirectory(ObjPath)
+            If Not Directory.Exists(Dir) Then Directory.CreateDirectory(Dir)
+
+            Dim MtlName As String = GetMainFileName(ObjPath)
+            Dim MtlBlocks As New List(Of String)
+            For n = 0 To m.Textures.Length - 1
+                Dim mt As New StringBuilder
+                m.ExportToGif(n, GetPath(Dir, n & ".gif"))
+                mt.AppendLine(String.Format("newmtl {0}", n))
+                mt.AppendLine("illum 0")
+                mt.AppendLine(String.Format("map_Kd {0}", n & ".gif"))
+                mt.AppendLine("Ka 0.2 0.2 0.2")
+                mt.AppendLine("Kd 0.8 0.8 0.8")
+                MtlBlocks.Add(mt.ToString)
+            Next
+            Using Mtl As New StreamEx(GetPath(Dir, MtlName & ".mtl"), FileMode.Create, FileAccess.ReadWrite)
+                Mtl.Write(System.Text.Encoding.UTF8.GetBytes(String.Join(System.Environment.NewLine, MtlBlocks.ToArray)))
+            End Using
+
+            Dim Blocks As New List(Of String)
+            Dim h As New StringBuilder
+            h.AppendLine(String.Format("# NumPoint: {0}", m.NumPoint))
+            h.AppendLine(String.Format("# NumDistrict: {0}", m.NumDistrict))
+            h.AppendLine(String.Format("# NumObject: {0}", m.NumObject))
+            h.AppendLine(String.Format("# NumTexture: {0}", m.NumTexture))
+            Blocks.Add(h.ToString)
+
+            Blocks.Add(String.Format("mtllib {0}", MtlName & ".mtl") & System.Environment.NewLine)
+
+            Dim v As New StringBuilder
+            For n = 0 To m.NumPoint - 1
+                Dim p = m.Points(n)
+                v.AppendLine(String.Format(System.Globalization.NumberFormatInfo.InvariantInfo, "v {0:r} {1:r} {2:r}", p.x, p.y, p.z))
+            Next
+
+            Blocks.Add(v.ToString)
+
+            Dim vt As New StringBuilder
+            Dim vtIndex As Integer
+            Dim f As New StringBuilder
+            For n = 0 To m.NumObject - 1
+                Dim o = m.Objects(n)
+                f.AppendLine(String.Format("g {0}", o.ObjectName))
+                Dim CurrentTexture As Integer = -1
+                For i = o.StartDistrictIndex To o.NextStartDistrictIndex - 1
+                    Dim d = m.Districts(i)
+                    If d.TextureID <> CurrentTexture Then
+                        f.AppendLine(String.Format("usemtl {0}", d.TextureID))
+                        CurrentTexture = d.TextureID
+                    End If
+                    If d.n > 0 Then
+                        f.Append("f")
+                        For k = d.n - 1 To 0 Step -1
+                            f.Append(String.Format(" {0}/{1}", d.Point(k) + 1, vtIndex + 1))
+                            vt.AppendLine(String.Format(System.Globalization.NumberFormatInfo.InvariantInfo, "vt {0:r} {1:r}", d.U(k), 1.0F - d.V(k)))
+                            vtIndex += 1
+                        Next
+                        f.AppendLine()
+                    End If
+                Next
+            Next
+
+            Blocks.Add(vt.ToString)
+            Blocks.Add(f.ToString)
+
+            Using Obj As New StreamEx(ObjPath, FileMode.Create, FileAccess.ReadWrite)
+                Obj.Write(System.Text.Encoding.UTF8.GetBytes(String.Join(System.Environment.NewLine, Blocks.ToArray)))
+            End Using
+*)
