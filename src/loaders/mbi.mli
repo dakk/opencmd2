@@ -12,7 +12,7 @@ module Point : sig
   type t = float * float * float
 
   val from_stream : in_channel -> t
-  val read_all_from_stream : in_channel -> int -> t list
+  val read_all_from_stream : in_channel -> int32 -> t list
 end
 (** Point 3D *)
 
@@ -20,11 +20,11 @@ module District : sig
   type t = {
     attribute : int;
     texture_id: int;
-    point_uvs : (int*int*int) list
+    point_uvs : (int*float*float) list
   }
 
   val from_stream : in_channel -> t
-  val read_all_from_stream : in_channel -> int -> t list
+  val read_all_from_stream : in_channel -> int32 -> t list
 end
 (** District *)
 
@@ -37,7 +37,7 @@ module Obj : sig
   }
 
   val from_stream : in_channel -> t
-  val read_all_from_stream : in_channel -> int -> t list
+  val read_all_from_stream : in_channel -> int32 -> t list
 end
 (** Objects *)
 
@@ -46,12 +46,13 @@ module Texture : sig
   type t = {
     width: int;
     height: int;
-    palette: int32 list;
-    rectangle: int list list;
+    palette: (int * int * int) list;
+    bitmap: int list list;
   }
   
+  val to_gif : t -> string -> unit
   val from_stream : in_channel -> t  
-  val read_all_from_stream : in_channel -> int -> t list
+  val read_all_from_stream : in_channel -> int32 -> t list
 end
 (** Texture informations *)
 

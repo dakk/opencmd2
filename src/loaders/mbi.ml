@@ -28,12 +28,13 @@ module Point = struct
       x : 8 * 4 : littleendian;
       y : 8 * 4 : littleendian;
       z : 8 * 4 : littleendian
-    |} -> (Int32.float_of_bits x, Int32.float_of_bits y, Int32.float_of_bits z)
+    |} -> 
+      (Int32.float_of_bits x, Int32.float_of_bits y, Int32.float_of_bits z)
   ;;
 
   let rec read_all_from_stream ic n = match n with
-  | 0 -> []
-  | n -> (from_stream ic) :: read_all_from_stream ic (n-1)
+  | 0l -> []
+  | n -> (from_stream ic) :: (read_all_from_stream ic @@ Int32.sub n Int32.one)
   ;;
 end
 
@@ -41,7 +42,7 @@ module District = struct
   type t = {
     attribute : int;
     texture_id: int;
-    point_uvs : (int*int*int) list
+    point_uvs : (int*float*float) list
   };;
 
   let from_stream s = 
@@ -54,7 +55,7 @@ module District = struct
         u : 8 * 2 : littleendian;
         v : 8 * 2 : littleendian
       |} -> 
-        (point, u, v) :: point_uvs ic (n-1)
+        (point, float (u) /. 4096., float (v) /. 4096.) :: (point_uvs ic @@ n - 1)
     in
     match%bitstring read_bitstring s 2 with
     | {| 
@@ -68,8 +69,8 @@ module District = struct
   ;;
 
   let rec read_all_from_stream ic n = match n with
-  | 0 -> []
-  | n -> (from_stream ic) :: read_all_from_stream ic (n-1)
+  | 0l -> []
+  | n -> (from_stream ic) :: (read_all_from_stream ic @@ Int32.sub n Int32.one)
   ;;
 end
 
@@ -91,8 +92,8 @@ module Obj = struct
   ;;
 
   let rec read_all_from_stream ic n = match n with
-  | 0 -> []
-  | n -> (from_stream ic) :: read_all_from_stream ic (n-1)
+  | 0l -> []
+  | n -> (from_stream ic) :: (read_all_from_stream ic @@ Int32.sub n Int32.one)
   ;;
 end
 
@@ -101,28 +102,54 @@ module Texture = struct
   type t = {
     width: int;
     height: int;
-    palette: int32 list;
-    rectangle: int list list;
+    palette: (int * int * int) list;
+    bitmap: int list list;
   };;
+
+  let to_gif tex path = 
+    let rec palette_conv l = match l with
+    | [] -> ""
+    | (r,g,b) :: l' -> 
+      let p = string_of_bitstring [%bitstring {| r : 1 * 8; g : 1 * 8; b : 1 * 8 |}] in
+      p ^ (palette_conv l')
+    in
+    let p = palette_conv tex.palette in
+    let header = [%bitstring {|
+      "GIF87a" : 6 * 8 : string;
+      tex.width : 2 * 8 : littleendian;
+      tex.height : 2 * 8 : littleendian;
+      1 : 1;
+      25 : 3;
+      1 : 1;
+      3 : 3;
+      0 : 8;
+      0 : 8;
+      p : 8 * (String.length p) : string
+    |}] in
+    ()
+  ;;
   
   let from_stream s = 
-    let rec read_rectangle s w h = 
-      let explode ss =
-        let rec exp i l = if i < 0 then l else exp (i - 1) ((Char.code ss.[i]) :: l) in
-        exp (String.length ss - 1) []
+    let rec read_bitmap s w h = 
+      let rec read_row s w = match w with
+      | 0 -> []
+      | w' -> 
+        match%bitstring read_bitstring s 1 with
+        | {| b : 8 * 1 : littleendian |} -> b :: read_row s (w-1)
       in
       match h with
       | 0 -> []
-      | h ->
-        match%bitstring read_bitstring s w with
-        | {| line : 8 * w : string |} ->
-          explode line :: read_rectangle s w (h-1)
+      | h -> read_row s w :: read_bitmap s w (h - 1)
     in
     let rec read_palette s n = match n with
     | 0 -> []
     | n -> 
       match%bitstring read_bitstring s 3 with
-      | {| pal : 8 * 3 : littleendian |} -> pal :: read_palette s (n - 1)
+      | {| 
+        r : 8 * 1 : littleendian;
+        g : 8 * 1 : littleendian;
+        b : 8 * 1 : littleendian 
+        |} -> (r, g, b) :: read_palette s (n - 1)
     in
     match%bitstring read_bitstring s 12 with
     | {| 
@@ -133,13 +160,13 @@ module Texture = struct
       width= Int32.to_int width;
       height= Int32.to_int height;
       palette= read_palette s 256;
-      rectangle= read_rectangle s (Int32.to_int width) (Int32.to_int height);
+      bitmap= read_bitmap s (Int32.to_int width) (Int32.to_int height);
     }
   ;;
   
   let rec read_all_from_stream ic n = match n with
-  | 0 -> []
-  | n -> (from_stream ic) :: read_all_from_stream ic (n-1)
+  | 0l -> []
+  | n -> (from_stream ic) :: (read_all_from_stream ic @@ Int32.sub n Int32.one)
   ;;
 end
 
@@ -155,24 +182,25 @@ type t = {
 
 let load path = 
   let ic = open_in_bin path in
-  match%bitstring read_bitstring ic 13 with 
+  match%bitstring read_bitstring ic 12 with 
   | {| 
     version : 1 * 8 : littleendian;
     identif : 3 * 8 : string;
     npoints : 4 * 8 : littleendian;
     ndistricts : 4 * 8 : littleendian
   |} -> 
-    Printf.printf "%d %s %d %d\n%!" version identif (Int32.to_int npoints) (Int32.to_int ndistricts); 
-    let points = Point.read_all_from_stream ic @@ Int32.to_int npoints in
-    let districts = District.read_all_from_stream ic @@ Int32.to_int ndistricts in
+    Printf.printf "%s\n%!" @@ Version.to_string (Version.of_byte version);
+    if identif <> "IBM" then raise LoadError;
+    let points = Point.read_all_from_stream ic npoints in
+    let districts = District.read_all_from_stream ic ndistricts in 
     (* read objects *)
     match%bitstring read_bitstring ic 4 with 
     | {| nob : 4 * 8 : littleendian |} -> 
-      let objs = Obj.read_all_from_stream ic @@ Int32.to_int nob in
+      let objs = Obj.read_all_from_stream ic nob in 
     (* read textures *)
     match%bitstring read_bitstring ic 4 with 
     | {| not : 4 * 8 : littleendian |} -> 
-      let texts = Texture.read_all_from_stream ic @@ Int32.to_int not in {
+      let texts = Texture.read_all_from_stream ic not in {
         version= Version.of_byte version;
         points= points;
         districts= districts;
@@ -185,15 +213,28 @@ let load path =
 let to_obj mbi path = 
   let rec write_points oc ps = match ps with
   | [] -> ()
-  | (x,y,z) :: ps' -> fprintf oc "v %f %f %f\n" x y z; write_points oc ps'
+  | (x,y,z) :: ps' -> fprintf oc "v  %f %f %f\n" x y z; write_points oc ps'
   in
-
+  let rec write_districts oc (ds:District.t list) = match ds with
+  | [] -> ()
+  | d :: ds' ->
+    let rec write_district_points oc dps = match dps with
+    | [] -> fprintf oc "\n"
+    | (p, u, v) :: dps' -> fprintf oc "%d " @@ p + 1; write_district_points oc dps'
+    in
+    if List.length d.point_uvs > 2 then (
+      fprintf oc "f ";
+      write_district_points oc d.point_uvs;
+      write_districts oc ds'
+    ) else (write_districts oc ds')
+  in
   let oc = open_out @@ path ^ "/scenery.obj" in
   fprintf oc "# NumPoint: %d\n" @@ List.length mbi.points;
   fprintf oc "# NumDistrict: %d\n" @@ List.length mbi.districts;
   fprintf oc "# NumObject: %d\n" @@ List.length mbi.objects;
   fprintf oc "# NumTextures: %d\n" @@ List.length mbi.textures;
-  write_points oc mbi.points;
+  write_points oc @@ List.rev mbi.points;
+  write_districts oc mbi.districts;
   close_out oc
 ;;
 

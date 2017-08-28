@@ -1,7 +1,9 @@
 open Bitstring;;
 
+exception LoadError
+
 let read ic n =
-  let buff = Bytes.make n '0' in
+  let buff = Bytes.make n (Char.chr 0x00) in
   let _ = input ic buff 0 n in 
   buff
 ;;
