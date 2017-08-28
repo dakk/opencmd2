@@ -1,4 +1,5 @@
 open Bitstring;;
+open Printf;;
 
 module Version = struct
   type t = C1 | C2 | C3 | UNKNOWN;;
@@ -204,15 +205,23 @@ let load path =
 ;;
 
 
-let to_obj mbi = 
-  false
+let to_obj mbi path = 
+  let rec write_points oc ps = match ps with
+  | [] -> ()
+  | (x,y,z) :: ps' -> fprintf oc "v %f %f %f\n" x y z; write_points oc ps'
+  in
+
+  let oc = open_out @@ path ^ "/scenery.obj" in
+  fprintf oc "# NumPoint: %d\n" @@ List.length mbi.points;
+  fprintf oc "# NumDistrict: %d\n" @@ List.length mbi.districts;
+  fprintf oc "# NumObject: %d\n" @@ List.length mbi.objects;
+  fprintf oc "# NumTextures: %d\n" @@ List.length mbi.textures;
+  write_points oc mbi.points;
+  close_out oc
 ;;
 
 
 (*
-Dim Dir As String = GetFileDirectory(ObjPath)
-            If Not Directory.Exists(Dir) Then Directory.CreateDirectory(Dir)
-
             Dim MtlName As String = GetMainFileName(ObjPath)
             Dim MtlBlocks As New List(Of String)
             For n = 0 To m.Textures.Length - 1

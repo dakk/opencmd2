@@ -1,5 +1,4 @@
 (** Mission mesh *)
-open Bitstring;;
 
 module Version : sig
   type t = C1 | C2 | C3 | UNKNOWN
@@ -7,6 +6,7 @@ module Version : sig
   val of_byte : int -> t
   val to_string : t -> string
 end
+(** Commandos version *)
 
 module Point : sig
   type t = float * float * float
@@ -14,6 +14,7 @@ module Point : sig
   val from_stream : in_channel -> t
   val read_all_from_stream : in_channel -> int -> t list
 end
+(** Point 3D *)
 
 module District : sig
   type t = {
@@ -25,6 +26,7 @@ module District : sig
   val from_stream : in_channel -> t
   val read_all_from_stream : in_channel -> int -> t list
 end
+(** District *)
 
 
 module Obj : sig
@@ -37,6 +39,7 @@ module Obj : sig
   val from_stream : in_channel -> t
   val read_all_from_stream : in_channel -> int -> t list
 end
+(** Objects *)
 
 
 module Texture : sig
@@ -50,6 +53,7 @@ module Texture : sig
   val from_stream : in_channel -> t  
   val read_all_from_stream : in_channel -> int -> t list
 end
+(** Texture informations *)
 
 
 type t = {
@@ -59,9 +63,10 @@ type t = {
   objects   : Obj.t list;
   textures  : Texture.t list;
 }
+(** MBI type *)
 
 val load : string -> t
 (** Load an MBI from file *)
 
-val to_obj : t -> string -> bool
-(** Save t in an .obj file string path *)
+val to_obj : t -> string -> unit
+(** Save t into .obj/.mtl files *)
