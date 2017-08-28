@@ -2,5 +2,8 @@ B ../_build/default/src
 B ../_build/default/src/engine
 B ../_build/default/src/loaders
 FLG -w -40
+PKG bitstring
+PKG ogaml
+PKG unix
 S engine
 S loaders

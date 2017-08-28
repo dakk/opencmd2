@@ -2,5 +2,6 @@
 
 (library
  ((name        loaders)
-  (libraries ())))
+  (preprocess (pps (ppx_bitstring)))
+  (libraries (ogaml bitstring))))
 

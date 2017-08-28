@@ -1,4 +1,4 @@
 (** Mission mesh *)
 type t
 
-val load : string -> t
+val load : string -> unit

@@ -1,0 +1,17 @@
+B ../_build/default/src/loaders
+B ../_build/default/test
+FLG -w -40
+PKG bigarray
+PKG bitstring
+PKG bytes
+PKG cstruct
+PKG hex
+PKG oUnit
+PKG oUnit.advanced
+PKG ocplib-endian
+PKG ocplib-endian.bigstring
+PKG ogaml
+PKG sexplib
+PKG sexplib.0
+PKG unix
+S ../src/loaders

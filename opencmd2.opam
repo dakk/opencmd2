@@ -21,7 +21,8 @@ depends: [
   "configurator" {build & >= "v0.9.1"}
   "ppx_bitstring" {build & >= "2.0.0"}
   
-  "stdint" {>= "0.3.0-0"}
+  "bitstring" {>= "2.1.0"}
+  "ogaml" {}
 ]
 
 depexts: [
