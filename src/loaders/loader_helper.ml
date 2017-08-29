@@ -9,3 +9,7 @@ let read ic n =
 ;;
 
 let read_bitstring ic n = read ic n |> bitstring_of_string;;
+
+let read_int32 ic = match%bitstring read_bitstring ic 4 with
+| {| n : 4 * 8 : littleendian |} -> n
+;;

@@ -79,13 +79,13 @@ module District = struct
     maxpy : float;
     maxpz : float;
     borders : int32 list;
-  }
+  };;
   
   let from_stream ic = 
-    let rec read_borders ic nborders = match nborders with 
-    | 0l -> []
+    let rec read_borders ic nborders acc = match nborders with 
+    | 0l -> acc
     | nb' -> match%bitstring read_bitstring ic 4 with
-      | {| border : 8 * 4 : littleendian |} -> border :: read_borders ic (Int32.sub nb' Int32.one)
+      | {| border : 8 * 4 : littleendian |} -> read_borders ic (Int32.sub nb' Int32.one) @@ acc @ [border]
     in
     match%bitstring read_bitstring ic 51 with
     | {| 
@@ -102,7 +102,10 @@ module District = struct
       maxpy : 4 * 8 : littleendian;
       maxpz : 4 * 8 : littleendian
     |} -> 
-      let borders = read_borders ic nborders in {
+      Printf.printf "sec %s\n%!" @@ Int32.to_string nborders;
+      let borders = read_borders ic nborders [] in 
+      Printf.printf "secend %d\n%!" @@ Int32.to_int nborders;
+      {
         terrain= (TIERRA, TIERRA);
         kx= Int32.float_of_bits kx;
         ky= Int32.float_of_bits ky;
@@ -143,22 +146,25 @@ let load path =
     ntoken : 4 * 8 : littleendian
   |} -> 
     let tokens = read_tokens ic ntoken [] in
-    match%bitstring read_bitstring ic 32 with
-    | {| ident : 32 * 8 : string |} ->
+    match%bitstring read_bitstring ic 50 with 
+    | {| 
+      ident : 32 * 8 : string;
+      npoints : 4 * 8 : littleendian;
+      nborders : 4 * 8 : littleendian;
+      ndistricts : 4 * 8 : littleendian;
+      nspecialdistricts : 4 * 8 : littleendian
+    |} ->
       if String.sub ident 0 4 <> "MAP1" then raise LoadError else
-      match%bitstring read_bitstring ic 16 with 
-      | {| 
-        npoints : 4 * 8 : littleendian;
-        nborders : 4 * 8 : littleendian;
-        ndistricts : 4 * 8 : littleendian;
-        nspecialdistricts : 4 * 8 : littleendian
-      |} ->
       (* Read points*)
       let points = Point.read_all_from_stream ic npoints in
       (* Read borders*)
       let borders = Border.read_all_from_stream ic nborders in
       (* Read districts*)
       let districts = District.read_all_from_stream ic ndistricts in
+      (* Read mesh *)
+      let _ = read ic 12 in
+      let nx = read_int32 ic in
+      let ny = read_int32 ic in
       {
         tokens= tokens;
         borders= borders;
