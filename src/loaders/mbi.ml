@@ -119,9 +119,9 @@ module Texture = struct
   let from_stream s = 
     let rec read_bitmap s pxs = match pxs with
     | 0 -> []
-    | w' -> 
+    | pxs' -> 
       match%bitstring read_bitstring s 1 with
-      | {| b : 8 * 1 : littleendian |} -> b :: read_bitmap s (pxs - 1)
+      | {| b : 8 * 1 : littleendian |} -> b :: read_bitmap s (pxs' - 1)
     in
     let rec read_palette s n acc = match n with
     | 0 -> acc
@@ -197,8 +197,9 @@ let to_obj mbi path =
   | (x,y,z) :: ps' -> fprintf oc "v  %f %f %f\n" x y z; write_points oc ps'
   in
   let rec write_districts oc (ds:District.t list) vt = match ds with
-  | [] -> vt + 1
+  | [] -> ()
   | d :: ds' ->
+    fprintf oc "g o%d\n" vt;
     fprintf oc "usemtl %d\n" d.texture_id;
     let rec write_district_vt oc dps = match dps with
     | [] -> ()
@@ -209,7 +210,7 @@ let to_obj mbi path =
     let rec write_district_points oc dps vt = match dps with
     | [] -> fprintf oc "\n"; vt
     | (p, u, v) :: dps' -> 
-      fprintf oc "%d/%d " (p + 1) (vt); 
+      fprintf oc "%d/%d " (p + 1) (vt + 1); 
       write_district_points oc dps' (vt + 1)
     in
       write_district_vt oc d.point_uvs;
@@ -217,23 +218,21 @@ let to_obj mbi path =
       let vt = write_district_points oc d.point_uvs vt in
       write_districts oc ds' vt
   in
-  let rec save_textures oc path txl i = match txl with
-  | [] -> ()
+  let rec save_textures mtl txl i = match txl with
+  | [] -> close_out mtl
   | t::txl' -> 
     let im = Texture.to_image t in
     Image.save im @@ sprintf "%s/%d.png" path i;
-    let mc = open_out @@ path ^ (sprintf "/mat%d.mtl" i) in
-    fprintf mc "newmtl %d\nillum 0\nmap_Kd %d.png\nKa 0.2 0.2 0.2\nKd 0.8 0.8 0.8\n\n" i i;
-    close_out mc;
-    fprintf oc "mtllib %d.mtl\n" i;
-    save_textures oc path txl' @@ i + 1
+    fprintf mtl "newmtl %d\nillum 0\nmap_Kd %d.png\nKa 0.2 0.2 0.2\nKd 0.8 0.8 0.8\n\n" i i;
+    save_textures mtl txl' @@ i + 1
   in
   let oc = open_out @@ path ^ "/scenery.obj" in
+  fprintf oc "mtllib scenery.mtl\n";
   fprintf oc "# NumPoint: %d\n" @@ List.length mbi.points;
   fprintf oc "# NumDistrict: %d\n" @@ List.length mbi.districts;
   fprintf oc "# NumObject: %d\n" @@ List.length mbi.objects;
   fprintf oc "# NumTextures: %d\n" @@ List.length mbi.textures;
-  save_textures oc path (List.rev mbi.textures) 0;
+  save_textures (open_out @@ path ^ (sprintf "/scenery.mtl")) (List.rev mbi.textures) 0;
   write_points oc @@ List.rev mbi.points;
   write_districts oc mbi.districts 0;
   close_out oc;
