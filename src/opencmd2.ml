@@ -1,7 +1,7 @@
 open Printf;;
 
 let main () =
-    printf "opencmd2\n";    
+    printf "opencmd2\n"
 ;;
 
 

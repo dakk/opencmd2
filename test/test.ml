@@ -18,9 +18,15 @@ let loaders_str_load () octx =
 	assert_equal false false
 ;;
 
+let loaders_grl_load () octx = 
+	let _ = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MENUS/MISSIONS.GRL" in
+	assert_equal false false
+;;
+
 let suite = "opencmd2" >::: [
 	"loaders.mbi.load" >:: loaders_mbi_load ();
 	"loaders.str.load" >:: loaders_str_load ();
+	"loaders.grl.load" >:: loaders_grl_load ();
 	"loaders.sec.load" >:: loaders_sec_load ();
 ];;
 

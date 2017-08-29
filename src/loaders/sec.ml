@@ -102,9 +102,7 @@ module District = struct
       maxpy : 4 * 8 : littleendian;
       maxpz : 4 * 8 : littleendian
     |} -> 
-      Printf.printf "sec %s\n%!" @@ Int32.to_string nborders;
       let borders = read_borders ic nborders [] in 
-      Printf.printf "secend %d\n%!" @@ Int32.to_int nborders;
       {
         terrain= (TIERRA, TIERRA);
         kx= Int32.float_of_bits kx;
@@ -146,9 +144,9 @@ let load path =
     ntoken : 4 * 8 : littleendian
   |} -> 
     let tokens = read_tokens ic ntoken [] in
-    match%bitstring read_bitstring ic 50 with 
+    match%bitstring read_bitstring ic 21 with 
     | {| 
-      ident : 32 * 8 : string;
+      ident : 5 * 8 : string;
       npoints : 4 * 8 : littleendian;
       nborders : 4 * 8 : littleendian;
       ndistricts : 4 * 8 : littleendian;
