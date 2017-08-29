@@ -1,4 +1,4 @@
-(** Mission mesh *)
+(** MBI *)
 open OgamlGraphics
 
 module Version : sig
