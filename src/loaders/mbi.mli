@@ -48,12 +48,10 @@ module Texture : sig
     width: int;
     height: int;
     palette: (int * int * int) list;
-    bitmap: int list list;
+    bitmap: int list;
   }
 
-
   val to_image : t -> Image.t
-  val to_gif : t -> string -> unit
   val from_stream : in_channel -> t  
   val read_all_from_stream : in_channel -> int32 -> t list
 end

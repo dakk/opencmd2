@@ -11,7 +11,14 @@ PKG oUnit.advanced
 PKG ocplib-endian
 PKG ocplib-endian.bigstring
 PKG ogaml
+PKG ogaml.core
+PKG ogaml.graphics
+PKG ogaml.math
+PKG ogaml.utils
 PKG sexplib
 PKG sexplib.0
+PKG str
+PKG threads
+PKG threads.posix
 PKG unix
 S ../src/loaders

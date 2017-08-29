@@ -3,7 +3,7 @@ open Hex;;
 open Loaders;;
 
 let loaders_mbi_load () octx = 
-	let mbi = Mbi.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MISIONES/KW/BUI05.MBI" in
+	let mbi = Mbi.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MISIONES/001/2.mbi" in
 	Mbi.to_obj mbi "/home/dakk/test/";
 	assert_equal false false
 ;;

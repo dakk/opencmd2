@@ -30,8 +30,7 @@ module Point = struct
       x : 8 * 4 : littleendian;
       y : 8 * 4 : littleendian;
       z : 8 * 4 : littleendian
-    |} -> 
-      (Int32.float_of_bits x, Int32.float_of_bits y, Int32.float_of_bits z)
+    |} -> (Int32.float_of_bits x, Int32.float_of_bits y, Int32.float_of_bits z)
   ;;
 
   let rec read_all_from_stream ic n = match n with
@@ -105,57 +104,34 @@ module Texture = struct
     width: int;
     height: int;
     palette: (int * int * int) list;
-    bitmap: int list list;
+    bitmap: int list;
   };;
 
-  let to_image tex = Image.create @@ `Data ({x=tex.width; y=tex.height}, "");;
-
-  let to_gif tex path = 
-    let rec palette_conv l = match l with
-    | [] -> ""
-    | (r,g,b) :: l' -> 
-      let p = string_of_bitstring [%bitstring {| r : 1 * 8; g : 1 * 8; b : 1 * 8 |}] in
-      p ^ (palette_conv l')
-    in
-    let p = palette_conv tex.palette in
-    let gif = string_of_bitstring [%bitstring {|
-      "GIF87a" : 6 * 8 : string;
-      tex.width : 2 * 8 : littleendian;
-      tex.height : 2 * 8 : littleendian;
-      1 : 1;
-      25 : 3;
-      1 : 1;
-      3 : 3;
-      0 : 8;
-      0 : 8;
-      p : 8 * (String.length p) : string
-    |}] in
-    let oc = open_out_bin path in
-    output oc gif 0 @@ Bytes.length gif;
-    close_out oc
+  let to_image tex = 
+    let rec to_raw bm acc = match bm with
+    | [] -> string_of_bitstring (concat (List.rev acc))
+    | b :: bm' ->
+      let (r, g, b) = List.nth tex.palette b in
+      to_raw bm' @@ [%bitstring {| r : 8; g : 8; b : 8; 0xff : 8 |}] :: acc
+    in Image.create @@ `Data ({x=tex.width; y=tex.height}, to_raw tex.bitmap [])
   ;;
   
   let from_stream s = 
-    let rec read_bitmap s w h = 
-      let rec read_row s w = match w with
-      | 0 -> []
-      | w' -> 
-        match%bitstring read_bitstring s 1 with
-        | {| b : 8 * 1 : littleendian |} -> b :: read_row s (w-1)
-      in
-      match h with
-      | 0 -> []
-      | h -> read_row s w :: read_bitmap s w (h - 1)
-    in
-    let rec read_palette s n = match n with
+    let rec read_bitmap s pxs = match pxs with
     | 0 -> []
+    | w' -> 
+      match%bitstring read_bitstring s 1 with
+      | {| b : 8 * 1 : littleendian |} -> b :: read_bitmap s (pxs - 1)
+    in
+    let rec read_palette s n acc = match n with
+    | 0 -> acc
     | n -> 
       match%bitstring read_bitstring s 3 with
       | {| 
         r : 8 * 1 : littleendian;
         g : 8 * 1 : littleendian;
         b : 8 * 1 : littleendian 
-        |} -> (r, g, b) :: read_palette s (n - 1)
+        |} -> read_palette s (n - 1) @@ acc @ [(r, g, b)]
     in
     match%bitstring read_bitstring s 12 with
     | {| 
@@ -165,8 +141,8 @@ module Texture = struct
     |} -> {
       width= Int32.to_int width;
       height= Int32.to_int height;
-      palette= read_palette s 256;
-      bitmap= read_bitmap s (Int32.to_int width) (Int32.to_int height);
+      palette= read_palette s 256 [];
+      bitmap= read_bitmap s @@ (Int32.to_int width) * (Int32.to_int height);
     }
   ;;
   
@@ -220,27 +196,47 @@ let to_obj mbi path =
   | [] -> ()
   | (x,y,z) :: ps' -> fprintf oc "v  %f %f %f\n" x y z; write_points oc ps'
   in
-  let rec write_districts oc (ds:District.t list) = match ds with
-  | [] -> ()
+  let rec write_districts oc (ds:District.t list) vt = match ds with
+  | [] -> vt + 1
   | d :: ds' ->
-    let rec write_district_points oc dps = match dps with
-    | [] -> fprintf oc "\n"
-    | (p, u, v) :: dps' -> fprintf oc "%d " @@ p + 1; write_district_points oc dps'
+    fprintf oc "usemtl %d\n" d.texture_id;
+    let rec write_district_vt oc dps = match dps with
+    | [] -> ()
+    | (p, u, v) :: dps' -> 
+      fprintf oc "vt %f %f\n" u (1.0 -. v); 
+      write_district_vt oc dps'
     in
-    if List.length d.point_uvs > 2 then (
+    let rec write_district_points oc dps vt = match dps with
+    | [] -> fprintf oc "\n"; vt
+    | (p, u, v) :: dps' -> 
+      fprintf oc "%d/%d " (p + 1) (vt); 
+      write_district_points oc dps' (vt + 1)
+    in
+      write_district_vt oc d.point_uvs;
       fprintf oc "f ";
-      write_district_points oc d.point_uvs;
-      write_districts oc ds'
-    ) else (write_districts oc ds')
+      let vt = write_district_points oc d.point_uvs vt in
+      write_districts oc ds' vt
+  in
+  let rec save_textures oc path txl i = match txl with
+  | [] -> ()
+  | t::txl' -> 
+    let im = Texture.to_image t in
+    Image.save im @@ sprintf "%s/%d.png" path i;
+    let mc = open_out @@ path ^ (sprintf "/mat%d.mtl" i) in
+    fprintf mc "newmtl %d\nillum 0\nmap_Kd %d.png\nKa 0.2 0.2 0.2\nKd 0.8 0.8 0.8\n\n" i i;
+    close_out mc;
+    fprintf oc "mtllib %d.mtl\n" i;
+    save_textures oc path txl' @@ i + 1
   in
   let oc = open_out @@ path ^ "/scenery.obj" in
   fprintf oc "# NumPoint: %d\n" @@ List.length mbi.points;
   fprintf oc "# NumDistrict: %d\n" @@ List.length mbi.districts;
   fprintf oc "# NumObject: %d\n" @@ List.length mbi.objects;
   fprintf oc "# NumTextures: %d\n" @@ List.length mbi.textures;
+  save_textures oc path (List.rev mbi.textures) 0;
   write_points oc @@ List.rev mbi.points;
-  write_districts oc mbi.districts;
-  close_out oc
+  write_districts oc mbi.districts 0;
+  close_out oc;
 ;;
 
 
