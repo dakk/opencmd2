@@ -40,3 +40,4 @@ type t = {
 }
   
 val load : string -> t
+val save_images : t -> string -> unit

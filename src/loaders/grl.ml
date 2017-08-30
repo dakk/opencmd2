@@ -67,7 +67,10 @@ module Image = struct
     | b :: bm' ->
       let (r, g, b) = List.nth palette b in
       to_raw bm' @@ [%bitstring {| r : 8; g : 8; b : 8; 0xff : 8 |}] :: acc
-    in Image.create @@ `Data ({x=Int32.to_int im.width; y=Int32.to_int im.height}, to_raw im.data [])
+    in 
+    Printf.printf "%s - %d %d = %d - %d\n" im.name (Int32.to_int im.width) (Int32.to_int im.height) ((Int32.to_int im.width) * (Int32.to_int im.height)) (List.length im.data);
+    
+    Image.create @@ `Data ({x=Int32.to_int im.width; y=Int32.to_int im.height}, to_raw im.data [])
   ;;
   
 
@@ -79,11 +82,17 @@ module Image = struct
     seek_in s (offset + (Int32.to_int im.offset) + 4);
     let line_address = read_line_address s (Int32.to_int im.height) [] in
     let offset' = pos_in s in
-    match im.compression with
-    | 0x2l
-    | 0x4l -> (* rle *) []
-    | 0x142l -> (* rle2 *) []
-    | _ -> (* rle3 *) []
+    let decoder = (match im.compression with
+    | 0x2l | 0x4l -> rle_decode
+    | 0x142l -> rle2_decode
+    | _ -> rle3_decode) in
+    let rec decode_lines lprev laddr acc = match laddr with
+    | [] -> acc
+    | l :: laddr' ->
+      let line = read s (Int32.to_int l - Int32.to_int lprev) |> decoder in
+      if List.length line <> Int32.to_int im.width then failwith "parse error" else 
+      decode_lines l laddr' @@ List.append acc line
+    in decode_lines (List.hd line_address) (List.tl line_address) []
   ;;
 
   let from_stream s = 
@@ -141,7 +150,14 @@ let load path =
     let palettes = Palette.read_all_from_stream ic paletten in
     let offset = pos_in ic in
     {
-      images= List.map (fun x -> { x with Image.data= Image.read_data ic offset x }) images;
+      images= List.map (fun x -> try { x with Image.data= Image.read_data ic offset x } with | _ -> x) images;
       palettes= List.map (fun x -> { x with Palette.data= Palette.read_data ic offset x }) palettes;
     }
+;;
+
+let save_images grl path = 
+  List.iter (fun im -> 
+    let i = Image.to_image im (List.nth grl.palettes (Int32.to_int im.palette_index)).data in
+    OgamlGraphics.Image.save i @@ sprintf "%s/%s.png" path im.name
+  ) grl.images
 ;;

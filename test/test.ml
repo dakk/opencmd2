@@ -19,7 +19,8 @@ let loaders_str_load () octx =
 ;;
 
 let loaders_grl_load () octx = 
-	let _ = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MENUS/MISSIONS.GRL" in
+	let grl = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MENUS/MISSIONS.GRL" in
+	Grl.save_images grl "/home/dakk/test/";
 	assert_equal false false
 ;;
 

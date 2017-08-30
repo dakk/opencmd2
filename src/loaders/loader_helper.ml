@@ -19,33 +19,26 @@ let rle_decode data =
   let rec rled data codecnum acc = match Bytes.length data with
   | 0 -> acc
   | n' -> 
+    let d' = Bytes.get data 0 |> Char.code in
+    let drest = Bytes.sub data 1 @@ n'-1 in
     if codecnum mod 4 = 0 then (
-      []
+      (*let last = List.rev acc |> List.hd in*)
+      let rec mklist n e = match n with | 0 -> [] | n' -> e :: mklist (n' - 1) e in
+      rled drest (codecnum + 1) acc @ (mklist d' (-1))
     ) else (
-      []
+      let rec enq dr n acc' = match n with
+      | 0 -> (dr, acc')
+      | n' -> 
+        let d' = Bytes.get data 0 |> Char.code in
+        let drest = Bytes.sub data 1 @@ n'-1 in
+        enq drest (n-1) @@ acc' @ [d']
+      in
+      let dr, acc' = enq drest d' [] in  
+      rled dr (codecnum + 1) acc @ acc'
     )
   in rled data 0 []
 ;;
 
-(*
-            Dim ret As New Queue(Of Int32)
-            Dim CodecNum As Integer = 0
-            For n As Integer = 0 To Code.Length - 1
-                If CodecNum Mod 4 = 0 Then
-                    For i As Integer = 0 To Code(n) - 1
-                        ret.Enqueue(-1)
-                    Next
-                Else
-                    For i As Integer = n + 1 To n + 1 + Code(n) - 1
-                        ret.Enqueue(Code(i))
-                    Next
-                    n += Code(n)
-                End If
-                CodecNum += 1
-            Next
-            Return ret.ToArray
-*)
-;;
 
-let rle2_decode data = [];;
-let rle3_decode data = [];;
+let rle2_decode data = failwith "not implemented"; [];;
+let rle3_decode data = failwith "not implemented"; [];;
