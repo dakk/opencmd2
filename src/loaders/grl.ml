@@ -8,7 +8,7 @@ module Palette = struct
   type t = {
     name : string;
     offset : int32;
-    data : (int*int*int) list;
+    data : (int * int * int) list;
   };;
 
   let read_data s offset pal =

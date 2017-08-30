@@ -4,7 +4,7 @@ module Palette : sig
   type t = {
     name : string;
     offset : int32;
-    data : (int*int*int) list;
+    data : (int * int * int) list;
   }
   
   val from_stream : in_channel -> t  
@@ -25,7 +25,7 @@ module Image : sig
     data : int list;
   }
 
-  val to_image : t -> (int*int*int) list -> Image.t
+  val to_image : t -> (int * int * int) list -> Image.t
   val from_stream : in_channel -> t  
   val read_all_from_stream : in_channel -> int32 -> t list
 end
