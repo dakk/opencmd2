@@ -18,17 +18,32 @@ let loaders_str_load () octx =
 	assert_equal false false
 ;;
 
-let loaders_grl_load () octx = 
+let loaders_grl_load () octx =
 	let grl = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MENUS/MISSIONS.GRL" in
 	Grl.save_images grl "/home/dakk/test/";
+	(*let grl = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/INTERFAZ/OFFICERS.GRL" in
+	Grl.save_images grl "/home/dakk/test/";
+	let grl = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/ANIMS/GRL/ASPAS_BCD08.GRL" in
+	Grl.save_images grl "/home/dakk/test/";
+	let grl = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MISIONES/001/5GLIB.GRL" in
+	Grl.save_images grl "/home/dakk/test/";
+	let grl = Grl.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA/MISIONES/XL1/XLLIB.GRL" in
+	Grl.save_images grl "/home/dakk/test/";*)
+	assert_equal false false
+;;
+
+
+let loaders_pck_load () octx = 
+	let _ = Pck.load "/home/dakk/.wine/drive_c/GOG Games/Commandos 2/DATA.PCK" in
 	assert_equal false false
 ;;
 
 let suite = "opencmd2" >::: [
-	"loaders.mbi.load" >:: loaders_mbi_load ();
-	"loaders.str.load" >:: loaders_str_load ();
+	(*"loaders.mbi.load" >:: loaders_mbi_load ();
+	"loaders.str.load" >:: loaders_str_load ();*)
 	"loaders.grl.load" >:: loaders_grl_load ();
-	"loaders.sec.load" >:: loaders_sec_load ();
+	(*"loaders.sec.load" >:: loaders_sec_load ();
+	"loaders.pck.load" >:: loaders_pck_load ();*)
 ];;
 
 let () = run_test_tt_main suite;;

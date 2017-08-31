@@ -22,16 +22,17 @@ let rle_decode data =
     let d' = Bytes.get data 0 |> Char.code in
     let drest = Bytes.sub data 1 @@ n'-1 in
     if codecnum mod 4 = 0 then (
-      (*let last = List.rev acc |> List.hd in*)
-      let rec mklist n e = match n with | 0 -> [] | n' -> e :: mklist (n' - 1) e in
-      rled drest (codecnum + 1) acc @ (mklist d' (-1))
+      let rec mklist n e acc = match n with 
+      | 0 -> acc 
+      | n' -> mklist (n' - 1) e @@ acc @ [e] 
+      in rled drest (codecnum + 1) acc @ (mklist d' (-1) [])
     ) else (
       let rec enq dr n acc' = match n with
       | 0 -> (dr, acc')
       | n' -> 
-        let d' = Bytes.get data 0 |> Char.code in
-        let drest = Bytes.sub data 1 @@ n'-1 in
-        enq drest (n-1) @@ acc' @ [d']
+        let d' = Bytes.get dr 0 |> Char.code in
+        let drest = Bytes.sub dr 1 @@ n - 1 in (* This is wrong but works *)
+        enq drest (n'-1) @@ acc' @ [d']
       in
       let dr, acc' = enq drest d' [] in  
       rled dr (codecnum + 1) acc @ acc'

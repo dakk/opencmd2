@@ -75,6 +75,7 @@ module Image = struct
   
 
   let read_data s offset im =
+    Printf.printf "loading %s\n%!" im.name;
     let rec read_line_address s n acc = match n with
     | 0 -> acc
     | n' -> read_line_address s (n-1) @@ acc @ [read_int32 s]
@@ -87,10 +88,15 @@ module Image = struct
     | 0x142l -> rle2_decode
     | _ -> rle3_decode) in
     let rec decode_lines lprev laddr acc = match laddr with
-    | [] -> acc
+    | [] -> 
+      seek_in s (offset' + Int32.to_int lprev);
+      let line = read s (Int32.to_int im.length - Int32.to_int lprev) |> decoder in
+      if List.length line <> Int32.to_int im.width then (Printf.printf "%s lineerr\n%!" im.name; failwith "parse error") else 
+      List.append acc line
     | l :: laddr' ->
+      seek_in s (offset' + Int32.to_int lprev);
       let line = read s (Int32.to_int l - Int32.to_int lprev) |> decoder in
-      if List.length line <> Int32.to_int im.width then failwith "parse error" else 
+      if List.length line <> Int32.to_int im.width then (Printf.printf "%s lineerr\n%!" im.name; failwith "parse error") else 
       decode_lines l laddr' @@ List.append acc line
     in decode_lines (List.hd line_address) (List.tl line_address) []
   ;;
@@ -157,7 +163,10 @@ let load path =
 
 let save_images grl path = 
   List.iter (fun im -> 
-    let i = Image.to_image im (List.nth grl.palettes (Int32.to_int im.palette_index)).data in
-    OgamlGraphics.Image.save i @@ sprintf "%s/%s.png" path im.name
+    try
+      let i = Image.to_image im (List.nth (List.rev grl.palettes) (Int32.to_int im.palette_index)).data in
+      OgamlGraphics.Image.save i @@ sprintf "%s/%s.png" path im.name
+    with 
+    | _ -> ()
   ) grl.images
 ;;
