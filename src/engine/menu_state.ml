@@ -5,6 +5,7 @@ open State;;
 
 type t = {
  sprites         : (string * Sprite.t) list;
+ audio           : (string * unit) list
 };;
 
 let _state = ref None;;
@@ -15,6 +16,9 @@ let update g = match !_state with
   _state := Some ({
     sprites= [
       ("mouse_cursor", sprite_of_image @@ Resources.get_cursor g.resources "default")
+    ];
+    audio= [
+
     ];
   }); 
   g
