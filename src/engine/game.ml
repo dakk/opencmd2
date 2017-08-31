@@ -22,10 +22,13 @@ let rec loop g = match Window.is_open g.window with
 | true ->
   Window.clear ~color:(Some (`RGB Color.RGB.black)) g.window;
     
+  Printf.printf "State: %s\n%!" (name_of_state g);
+  
   (* Draw *)
   let g' = match g.state with 
-  | `MenuState -> Printf.printf "drawing menu\n%!"; Menu_state.draw g
-  | _ -> Printf.printf "drawing game\n%!"; g
+  | `MenuState -> Menu_state.draw g
+  | `IngameState -> Ingame_state.draw g
+  | _ -> g
   in
 
   let _ = Window.display g.window in
@@ -36,12 +39,14 @@ let rec loop g = match Window.is_open g.window with
   | None -> g' 
   | Some ev -> (match g'.state with
     | `MenuState -> Menu_state.handle_event g' ev
+    | `IngameState -> Ingame_state.handle_event g' ev
     | _ -> g'
   ) in
 
   (* Update *)
   let g''' = match g.state with 
   | `MenuState -> Menu_state.update g''
+  | `IngameState -> Ingame_state.update g''
   | _ -> g''
   in
 

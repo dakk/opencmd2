@@ -8,6 +8,7 @@ type t = {
   data_path   : string;
   resources   : Resources.t;
   
-  state  : [`MenuState | `IngameState];
+  state  : [`MenuState | `IngameState | `PauseState ];
 }
 
+val name_of_state : t -> string

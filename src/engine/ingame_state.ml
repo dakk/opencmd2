@@ -4,9 +4,8 @@ open OgamlMath;;
 open State;;
 
 type t = {
-  sprites         : (string * Sprite.t) list;
-  audio           : (string * unit) list;
-  screen          : [`Start | `MissionSelect]
+ sprites         : (string * Sprite.t) list;
+ audio           : (string * unit) list
 };;
 
 let _state = ref None;;
@@ -20,7 +19,6 @@ let update g = match !_state with
     audio= [
 
     ];
-    screen= `Start
   }); 
   g
 | Some (state) ->
@@ -30,6 +28,7 @@ let update g = match !_state with
 let draw g = match !_state with | None -> g | Some (state) ->
   (* Draw cursor *)
   Utils.draw_cursor g.window @@ List.assoc "mouse_cursor" state.sprites;
+  
 
   g
 ;;
@@ -40,7 +39,7 @@ let handle_event g ev = match ev with
   | _ -> g
 )
 | Event.KeyPressed (ke) -> (match ke.key with
-  | Escape -> Printf.printf "escape!!!!\n%!"; { g with state=`IngameState }
+  | Escape -> Printf.printf "escape!!!!\n%!"; { g with state=`PauseState }
   | _ -> g)
 | _ -> g
 ;;
