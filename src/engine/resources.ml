@@ -1,8 +1,15 @@
+open OgamlCore;;
+open OgamlGraphics;;
+
 type t = {
-  c : int;
+  path : string;
 };;
 
 
 let init path = {
-  c=0
+  path= path;
 };;
+
+let get_cursor r cname = 
+  Image.create @@ `File "data/cursor.png"
+;;

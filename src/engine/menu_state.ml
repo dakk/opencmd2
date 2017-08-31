@@ -10,10 +10,11 @@ type t = {
 let _state = ref None;;
 
 let update g = match !_state with 
-| None ->
+| None -> (* Load resources *)
+  let sprite_of_image img = Sprite.create ~texture:(Texture.Texture2D.create (module Window) g.window (`Image img)) () in
   _state := Some ({
     sprites= [
-      ("mouse_cursor", Sprite.create ~texture:(Texture.Texture2D.create (module Window) g.window (`File "data/cursor.png")) ())
+      ("mouse_cursor", sprite_of_image @@ Resources.get_cursor g.resources "default")
     ];
   }); 
   g
