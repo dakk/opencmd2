@@ -36,6 +36,8 @@ let loaders_grl_load () octx =
 let loaders_pck_load () octx = 
 	let l = Pck.load "/mnt/data/Commandos 2+3 [GOG]__uXfVb7/Commandos 2/DATA.PCK" in
 	let _ = Pck.print_tree l in
+	let l = Pck.load "/mnt/data/Commandos 2+3 [GOG]__uXfVb7/Commandos 2/DATA2.PCK" in
+	let _ = Pck.print_tree l in
 	assert_equal false false
 ;;
 

@@ -20,7 +20,7 @@ let print_tree pck =
   let rec pt ftl l = match ftl with
   | [] -> ()
   | File (n, s, a) :: ftl' -> 
-    Printf.printf "%sf %s\n%!" (String.make l ' ') n;
+    (*Printf.printf "%sf %s\n%!" (String.make l ' ') n;*)
     pt ftl' l
   | Directory (n, ft') :: ftl' -> 
     Printf.printf "%sd %s\n%!" (String.make l ' ') n;
@@ -29,6 +29,9 @@ let print_tree pck =
   in pt [pck.tree] 1
 ;;
 
+let open_file pck path = pck.file;;
+
+let read_file pck path = "";;
 
 let load path =
   let rec read_fdbs ic =
@@ -50,7 +53,7 @@ let load path =
         Directory (filename, files) :: read_fdbs ic
       | 0xffl -> (* Directory tail *)
         []
-      | x -> Printf.printf "%s\n%!" @@ Int32.to_string x; []
+      | x -> Printf.printf "unk header %s\n%!" @@ Int32.to_string x; []
   in
   let ic = open_in_bin path in {
     file= ic;
