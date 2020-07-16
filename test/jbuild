@@ -1,8 +1,0 @@
-(executable
- ((name test)
-  (libraries (oUnit hex loaders))))
-
-(alias
- ((name    runtest)
-  (deps    (test.exe))
-(action (run ${<}))))

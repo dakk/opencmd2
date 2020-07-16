@@ -1,17 +1,4 @@
-B ../_build/default/src
-B ../_build/default/src/engine
-B ../_build/default/src/loaders
-FLG -w -40
-PKG bigarray
-PKG bitstring
-PKG ogaml
-PKG ogaml.core
-PKG ogaml.graphics
-PKG ogaml.math
-PKG ogaml.utils
-PKG str
-PKG threads
-PKG threads.posix
-PKG unix
-S engine
-S loaders
+EXCLUDE_QUERY_DIR
+B ../_build/default/src/.opencmd2.eobjs/byte
+S .
+FLG -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs
